@@ -4,27 +4,23 @@
     "express": "^5.1.0",
     "mongoose": "^8.20.0"
   },
-  "name": "url-shortener",
+  "name": "codealpha-url-shortener",
   "version": "1.0.0",
-  "main": "src/index.js",
-  "devDependencies": {
-    "nodemon": "^3.1.11"
-  },
+  "main": "index.js",
+  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/silassdev/cautious-eureka.git"
+    "url": "git+https://github.com/silassdev/super-duper-goggles.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/silassdev/cautious-eureka/issues"
+    "url": "https://github.com/silassdev/super-duper-goggles/issues"
   },
-  "homepage": "https://github.com/silassdev/cautious-eureka#readme",
+  "homepage": "https://github.com/silassdev/super-duper-goggles#readme",
   "description": ""
 }

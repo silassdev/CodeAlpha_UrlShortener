@@ -88,6 +88,3 @@ Visit `http://localhost:3000` in your browser. Enter a URL to shorten and click 
 - `npm run dev`: Start the development server with nodemon
 - `npm test`: Run tests (not implemented)
 
-## License
-
-ISC
