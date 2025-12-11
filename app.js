@@ -24,17 +24,13 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// rate limiter
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 120 });
 app.use(limiter);
 
-// serve frontend static files from project-root/public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API routes (mounted at /api)
 app.use('/api', urlRoutes);
 
-// redirect route (short code) - must come after static + API
 const Url = require('./src/models/Url');
 app.get('/:code', async (req, res, next) => {
   try {
