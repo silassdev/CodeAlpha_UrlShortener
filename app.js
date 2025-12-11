@@ -1,46 +1,31 @@
 require('dotenv').config();
-
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const { nanoid } = require('nanoid');
+const serverless = require('serverless-http');
 
 const app = express();
-
-const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/urlshort';
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB is connected.'))
-  .catch(err => console.error('DB Error:', err));
 
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Schema
 const shortSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, index: true },
   longUrl: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
-const Short = mongoose.model('Short', shortSchema);
+const Short = mongoose.models.Short || mongoose.model('Short', shortSchema);
 
+// Helpers
 function normalizeToAbsolute(longUrl, req) {
   if (!longUrl || typeof longUrl !== 'string') throw new Error('Invalid URL');
-
   longUrl = longUrl.trim();
-
-  if (/^\//.test(longUrl)) {
-    return `${req.protocol}://${req.get('host')}${longUrl}`;
-  }
-
-  if (/^https?:\/\//i.test(longUrl)) {
-    return longUrl;
-  }
-
- 
+  if (/^\//.test(longUrl)) return `${req.protocol}://${req.get('host')}${longUrl}`;
+  if (/^https?:\/\//i.test(longUrl)) return longUrl;
   try {
     const candidate = 'https://' + longUrl;
     new URL(candidate);
@@ -50,14 +35,12 @@ function normalizeToAbsolute(longUrl, req) {
   }
 }
 
-
 app.post('/shorten', async (req, res) => {
   try {
     const { longUrl } = req.body;
     if (!longUrl) return res.status(400).json({ error: 'longUrl is required' });
 
     const normalized = normalizeToAbsolute(longUrl, req);
-
     const existing = await Short.findOne({ longUrl: normalized }).lean();
     if (existing) {
       return res.json({
@@ -74,7 +57,7 @@ app.post('/shorten', async (req, res) => {
       shortUrl: `${req.protocol}://${req.get('host')}/${code}`
     });
   } catch (err) {
-    console.error('POST /shorten error:', err.message || err);
+    console.error('POST /shorten error:', err);
     return res.status(400).json({ error: err.message || 'Server error' });
   }
 });
@@ -84,8 +67,6 @@ app.get('/:code', async (req, res) => {
     const { code } = req.params;
     const doc = await Short.findOne({ code }).lean();
     if (!doc) return res.status(404).send('Short URL not found');
-
-    console.log(`Redirecting ${code} -> ${doc.longUrl}`);
     return res.redirect(302, doc.longUrl);
   } catch (err) {
     console.error('Redirect error:', err);
@@ -93,4 +74,30 @@ app.get('/:code', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/urlshort';
+let cached = global._mongoose;
+
+async function connectToDatabase() {
+  if (cached && cached.conn) return cached.conn;
+  if (!cached) cached = global._mongoose = { conn: null, promise: null };
+
+  if (!cached.promise) {
+    const opts = { useNewUrlParser: true, useUnifiedTopology: true };
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then(m => m);
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+const handler = async (req, res) => {
+  try {
+    await connectToDatabase();
+    return app(req, res);
+  } catch (err) {
+    console.error('DB connect error:', err);
+    res.statusCode = 500;
+    res.end('Database connection error');
+  }
+};
+
+module.exports = serverless(handler);
