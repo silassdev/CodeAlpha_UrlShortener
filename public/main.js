@@ -55,6 +55,6 @@ copyBtn.addEventListener('click', () => {
   navigator.clipboard?.writeText(url).then(() => {
     message.textContent = 'Copied to clipboard';
   }).catch(() => {
-    message.textContent = 'Unable to copy';
+    message.textContent = 'Faid to copy';
   });
 });
